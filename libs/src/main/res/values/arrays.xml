@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="preferred_media_sources" translatable="false">
+        <item>com.android.car.radio/.service.RadioAppService</item>
+    </string-array>
+</resources>
