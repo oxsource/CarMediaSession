@@ -228,6 +228,11 @@ public class PlaybackViewModel extends AndroidViewModel {
         return null == state ? null : state.mMediaSource;
     }
 
+    public void setMediaMetadata(MediaItemMetadata data) {
+        if (null == data) return;
+        mMetadata.postValue(data);
+    }
+
     private class MediaControllerCallback extends MediaControllerCompat.Callback {
 
         private MediaBrowserConnector.BrowsingState mBrowsingState;

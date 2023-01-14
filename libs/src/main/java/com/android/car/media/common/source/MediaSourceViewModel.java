@@ -18,10 +18,11 @@ package com.android.car.media.common.source;
 
 import android.app.Application;
 import android.car.Car;
-import android.car.CarNotConnectedException;
 import android.car.media.CarMediaManager;
 import android.content.ComponentName;
+import android.media.MediaMetadata;
 import android.os.Handler;
+import android.support.v4.media.MediaMetadataCompat;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -30,8 +31,11 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.android.car.media.common.MediaItemMetadata;
 import com.android.car.media.common.source.MediaBrowserConnector.BrowsingState;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -63,7 +67,7 @@ public class MediaSourceViewModel extends AndroidViewModel {
 
         Car getCarApi();
 
-        CarMediaManager getCarMediaManager(Car carApi) throws CarNotConnectedException;
+        CarMediaManager getCarMediaManager(Car carApi) throws Exception;
 
         MediaSource getMediaSource(ComponentName componentName);
     }
@@ -98,7 +102,7 @@ public class MediaSourceViewModel extends AndroidViewModel {
             }
 
             @Override
-            public CarMediaManager getCarMediaManager(Car carApi) throws CarNotConnectedException {
+            public CarMediaManager getCarMediaManager(Car carApi) throws Exception {
                 return (CarMediaManager) carApi.getCarManager(Car.CAR_MEDIA_SERVICE);
             }
 
@@ -129,9 +133,14 @@ public class MediaSourceViewModel extends AndroidViewModel {
         try {
             mCarMediaManager = mInputFactory.getCarMediaManager(mCar);
             mCarMediaManager.addMediaSourceListener(mMediaSourceListener, mode);
-            updateModelState(mInputFactory.getMediaSource(mCarMediaManager.getMediaSource(mode)));
-        } catch (CarNotConnectedException e) {
-            Log.e(TAG, "Car not connected", e);
+            ComponentName component = mCarMediaManager.getMediaSource(mode);
+            if (null == component) {
+                List<ComponentName> components = getLastMediaSources(mode);
+                component = components.isEmpty() ? null : components.get(0);
+            }
+            String sourceText = null == component ? "" : component.flattenToShortString();
+            Log.d(TAG, "init media source: " + sourceText);
+            updateModelState(mInputFactory.getMediaSource(component));
         } catch (Exception e) {
             Log.e(TAG, "MediaSourceViewModel connect exp:", e);
         }
@@ -168,6 +177,19 @@ public class MediaSourceViewModel extends AndroidViewModel {
      */
     public LiveData<BrowsingState> getBrowsingState() {
         return mBrowsingState;
+    }
+
+    public MediaItemMetadata getMediaMetadata(ComponentName source) {
+        if (null == mCarMediaManager) return null;
+        MediaMetadata data = mCarMediaManager.getMediaMetadata(source);
+        MediaMetadataCompat compat = MediaMetadataCompat.fromMediaMetadata(data);
+        if (null == compat) return null;
+        return new MediaItemMetadata(compat);
+    }
+
+    public List<ComponentName> getLastMediaSources(int mode) {
+        if (null == mCarMediaManager) return new ArrayList<>(0);
+        return mCarMediaManager.getLastMediaSources(mode);
     }
 
     private void updateModelState(MediaSource newMediaSource) {

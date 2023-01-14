@@ -97,6 +97,11 @@ public class MediaItemMetadata implements Parcelable {
         mArtist = artist;
     }
 
+    @Nullable
+    public MediaDescriptionCompat getMediaDescription() {
+        return mMediaDescription;
+    }
+
     /**
      * @return media item id
      */
