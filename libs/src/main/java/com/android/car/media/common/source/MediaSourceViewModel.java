@@ -20,7 +20,8 @@ import android.app.Application;
 import android.car.Car;
 import android.car.media.CarMediaManager;
 import android.content.ComponentName;
-import android.media.MediaMetadata;
+import android.media.MediaDescription;
+import android.net.Uri;
 import android.os.Handler;
 import android.support.v4.media.MediaMetadataCompat;
 import android.util.Log;
@@ -134,12 +135,6 @@ public class MediaSourceViewModel extends AndroidViewModel {
             mCarMediaManager = mInputFactory.getCarMediaManager(mCar);
             mCarMediaManager.addMediaSourceListener(mMediaSourceListener, mode);
             ComponentName component = mCarMediaManager.getMediaSource(mode);
-            if (null == component) {
-                List<ComponentName> components = getLastMediaSources(mode);
-                component = components.isEmpty() ? null : components.get(0);
-            }
-            String sourceText = null == component ? "" : component.flattenToShortString();
-            Log.d(TAG, "init media source: " + sourceText);
             updateModelState(mInputFactory.getMediaSource(component));
         } catch (Exception e) {
             Log.e(TAG, "MediaSourceViewModel connect exp:", e);
@@ -179,12 +174,30 @@ public class MediaSourceViewModel extends AndroidViewModel {
         return mBrowsingState;
     }
 
+    public MediaDescription getMediaDescription(ComponentName source) {
+        if (null == mCarMediaManager || null == source) return null;
+        return mCarMediaManager.getMediaDescription(source);
+    }
+
     public MediaItemMetadata getMediaMetadata(ComponentName source) {
-        if (null == mCarMediaManager) return null;
-        MediaMetadata data = mCarMediaManager.getMediaMetadata(source);
-        MediaMetadataCompat compat = MediaMetadataCompat.fromMediaMetadata(data);
-        if (null == compat) return null;
-        return new MediaItemMetadata(compat);
+        MediaDescription desc = getMediaDescription(source);
+        if (null == desc) return null;
+        MediaMetadataCompat.Builder builder = new MediaMetadataCompat.Builder()
+                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, desc.getMediaId())
+                .putText(MediaMetadataCompat.METADATA_KEY_TITLE, desc.getTitle())
+                .putText(MediaMetadataCompat.METADATA_KEY_DISPLAY_TITLE, desc.getTitle())
+                .putText(MediaMetadataCompat.METADATA_KEY_DISPLAY_SUBTITLE, desc.getSubtitle())
+                .putText(MediaMetadataCompat.METADATA_KEY_DISPLAY_DESCRIPTION, desc.getDescription())
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, desc.getIconBitmap());
+        Uri iconUri = desc.getIconUri();
+        if (null != iconUri) {
+            builder.putString(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON_URI, iconUri.toString());
+        }
+        Uri mediaUri = desc.getMediaUri();
+        if (null != mediaUri) {
+            builder.putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, mediaUri.toString());
+        }
+        return new MediaItemMetadata(builder.build());
     }
 
     public List<ComponentName> getLastMediaSources(int mode) {
