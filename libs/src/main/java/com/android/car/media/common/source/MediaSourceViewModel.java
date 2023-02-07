@@ -220,4 +220,23 @@ public class MediaSourceViewModel extends AndroidViewModel {
             mBrowserConnector.connectTo(newMediaSource);
         }
     }
+
+    public MediaBrowserConnector.ConnectionStatus getConnectStatus() {
+        BrowsingState state = getBrowsingState().getValue();
+        MediaBrowserConnector.ConnectionStatus status = null == state ? null : state.mConnectionStatus;
+        return null == status ? MediaBrowserConnector.ConnectionStatus.SUSPENDED : status;
+    }
+
+    public boolean shakeHands() {
+        MediaSource source = mPrimaryMediaSource.getValue();
+        if (null == source) {
+            Log.e(TAG, "ping primary media source is null.");
+            return false;
+        }
+        MediaBrowserConnector.ConnectionStatus status = getConnectStatus();
+        if (MediaBrowserConnector.ConnectionStatus.SUSPENDED != status) return false;
+        Log.w(TAG, "try to connect primary source");
+        mBrowserConnector.connectTo(source);
+        return true;
+    }
 }
