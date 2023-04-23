@@ -38,6 +38,7 @@ import androidx.lifecycle.Observer;
 
 import com.android.car.media.common.MediaConstants;
 import com.android.car.media.common.MediaItemMetadata;
+import com.android.car.media.common.R;
 import com.android.car.media.common.source.MediaBrowserConnector;
 import com.android.car.media.common.source.MediaBrowserConnector.ConnectionStatus;
 import com.android.car.media.common.source.MediaSource;
@@ -144,6 +145,8 @@ public class PlaybackViewModel extends AndroidViewModel {
     });
 
     private final InputFactory mInputFactory;
+    //
+    private final boolean requireRemainMetadata;
 
     private PlaybackViewModel(Application application, int mode) {
         this(application, MediaSourceViewModel.get(application, mode).getBrowsingState(),
@@ -156,6 +159,7 @@ public class PlaybackViewModel extends AndroidViewModel {
         mInputFactory = factory;
         Observer<MediaBrowserConnector.BrowsingState> mMediaBrowsingObserver = mMediaControllerCallback::onMediaBrowsingStateChanged;
         browsingState.observeForever(mMediaBrowsingObserver);
+        requireRemainMetadata = application.getResources().getBoolean(R.bool.require_remain_playback_metadata);
     }
 
     /**
@@ -270,7 +274,7 @@ public class PlaybackViewModel extends AndroidViewModel {
         }
 
         private void setMediaController(MediaControllerCompat mediaController) {
-            mMediaMetadata = null;
+            mMediaMetadata = requireRemainMetadata ? mMediaMetadata : null;
             mPlaybackState = null;
             mMediaController = mediaController;
             mPlaybackControls.setValue(new PlaybackController(mediaController));
@@ -283,7 +287,7 @@ public class PlaybackViewModel extends AndroidViewModel {
                 onQueueChanged(mMediaController.getQueue());
                 onQueueTitleChanged(mMediaController.getQueueTitle());
             } else {
-                onMetadataChanged(null);
+                onMetadataChanged(mMediaMetadata);
                 onPlaybackStateChanged(null);
                 onQueueChanged(null);
                 onQueueTitleChanged(null);
