@@ -227,14 +227,14 @@ public class MediaSourceViewModel extends AndroidViewModel {
         return null == status ? MediaBrowserConnector.ConnectionStatus.SUSPENDED : status;
     }
 
-    public boolean shakeHands() {
+    public boolean shakeHands(boolean force) {
         MediaSource source = mPrimaryMediaSource.getValue();
         if (null == source) {
             Log.e(TAG, "ping primary media source is null.");
             return false;
         }
         MediaBrowserConnector.ConnectionStatus status = getConnectStatus();
-        if (MediaBrowserConnector.ConnectionStatus.SUSPENDED != status) return false;
+        if (!force && MediaBrowserConnector.ConnectionStatus.SUSPENDED != status) return false;
         Log.w(TAG, "try to connect primary source");
         mBrowserConnector.connectTo(source);
         return true;
