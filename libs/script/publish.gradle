@@ -1,0 +1,37 @@
+task generateSourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    archiveClassifier.set("sources")
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            media(MavenPublication) {
+                from components.release
+                groupId = 'com.android.car'
+                artifactId = 'media-session'
+                version = '1.0.0'
+
+                artifact generateSourceJar
+
+                pom.withXml {
+                    asNode().dependencies.'*'.each() { dep ->
+                        if (dep.excludeRules.size() <= 0) return
+                        exclusionsNode = dep.appendNode('exclusions')
+                        dep.excludeRules.each { ExcludeRule rule ->
+                            exclusionNode = exclusionsNode.appendNode('exclusion')
+                            exclusionNode.appendNode('groupId', rule.group)
+                            exclusionNode.appendNode('artifactId', rule.module)
+                        }
+                    }
+                }
+            }
+        }
+        repositories {
+            maven {
+                name repo_product_group
+                url MavenRepoApi.uri(repo_product_name_snap)
+            }
+        }
+    }
+}
